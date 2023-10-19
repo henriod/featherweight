@@ -169,9 +169,6 @@ async def c2b_mpesa_confirmation_resource(
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Missing required field: {e}")
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 def dev():
     try:
         subprocess.check_output(["redis-cli", "ping"], stderr=subprocess.STDOUT)
