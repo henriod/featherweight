@@ -1,17 +1,20 @@
 import asyncio
 import logging
 import subprocess
+from datetime import datetime
 import time
 
 import redis.asyncio as redis
 import uvicorn
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Header, Response, status, BackgroundTasks
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
 from pydantic import BaseModel
+
+from typing import Optional, List, Union
 
 from config import settings
 
@@ -25,6 +28,41 @@ class UserResponse(BaseModel):
     user_id: str
     email: str
     name: str
+
+class C2BMpesaRequest(BaseModel):
+    TransactionType: str
+    TransID: str
+    TransTime: str
+    TransAmount: float
+    BusinessShortCode: str
+    BillRefNumber: str
+    InvoiceNumber: str
+    OrgAccountBalance: float
+    ThirdPartyTransID: str
+    MSISDN: str
+    FirstName: str
+    MiddleName: str
+    LastName: str
+
+
+class PaymentConfirmation(BaseModel):
+    receipt_id: Optional[int]
+    success: bool = False
+    errors: Optional[List[str]]
+
+
+class PaymentConfirmationResponse(BaseModel):
+    ResultCode: str = "0"
+    ResultDesc: str = "Accepted"
+
+
+def create_receipt(c2b_mpesa_request: C2BMpesaRequest, transaction_date: str):
+
+    # perform system related events here e.g. create the receipt:
+
+    receipt = {}
+
+    return receipt
 
 
 @app.get("/")
@@ -80,6 +118,49 @@ async def time_request(request, call_next):
     logger.info(f"{request.method} {round(process_time, 5)}s {request.url}")
     return response
 
+@app.post("/receipts/c2b-payment-confirmation", tags=["Receipts"], summary=api_summary, description=api_description,
+             response_model=PaymentConfirmation)
+async def c2b_mpesa_confirmation_resource(background_tasks: BackgroundTasks, response: Response, c2b_mpesa_request: C2BMpesaRequest,
+                                          user_agent: Union[str, None] = Header(default=None, include_in_schema=False)):
+
+    # log time
+    start = time.perf_counter()
+
+    # check transaction time:
+    # default date time:
+    transaction_date_time = (datetime.today()).strftime('%Y-%m-%d %H:%M')
+    transaction_date = (datetime.today()).strftime('%Y-%m-%d')
+
+    try:
+        mpesa_request_time = datetime.strptime(c2b_mpesa_request.TransTime, "%Y%m%d%H%M%S").date()
+        transaction_date_time = mpesa_request_time.strftime('%Y-%m-%d %H:%M')
+        transaction_date = mpesa_request_time.strftime('%Y-%m-%d')
+
+    except ValueError as e:
+        error_on_date_conversion = f"M-Pesa Date conversion error: Date:{c2b_mpesa_request.TransTime} does not conform to %d %b %Y"
+
+    payment_confirmation = PaymentConfirmation()
+
+    # check if request invoice number is numeric:
+    if c2b_mpesa_request.BillRefNumber.isnumeric():
+        # do validation here:
+        # then:
+        receipt = create_receipt(c2b_mpesa_request, transaction_date)
+
+    else:
+
+        # value supplied was not an integer, do alphanumeric validation here:
+
+        # add receipting creation code:
+        # create the receipt object:
+        receipt = create_receipt(c2b_mpesa_request, transaction_date)
+
+    # performance monitoring
+    request_time = time.perf_counter() - start
+
+    print(request_time)
+
+    return payment_confirmation
 
 def dev():
     try:
