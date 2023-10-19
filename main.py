@@ -118,10 +118,13 @@ async def time_request(request, call_next):
     logger.info(f"{request.method} {round(process_time, 5)}s {request.url}")
     return response
 
-@app.post("/receipts/c2b-payment-confirmation", tags=["Receipts"], summary=api_summary, description=api_description,
-             response_model=PaymentConfirmation)
-async def c2b_mpesa_confirmation_resource(background_tasks: BackgroundTasks, response: Response, c2b_mpesa_request: C2BMpesaRequest,
-                                          user_agent: Union[str, None] = Header(default=None, include_in_schema=False)):
+@app.post("/receipts/c2b-payment-confirmation", tags=["Receipts"], response_model=PaymentConfirmation)
+async def c2b_mpesa_confirmation_resource(
+    background_tasks: BackgroundTasks, 
+    response: Response, 
+    c2b_mpesa_request: C2BMpesaRequest,
+    user_agent: Union[str, None] = Header(default=None, include_in_schema=False)
+    ):
 
     # log time
     start = time.perf_counter()
