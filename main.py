@@ -127,7 +127,7 @@ async def c2b_mpesa_confirmation_resource(
     c2b_mpesa_request: Any = Body(None)
     ):
     try:
-        stk_callback = data["Body"]["stkCallback"]
+        stk_callback = c2b_mpesa_request["Body"]["stkCallback"]
         
         MerchantRequestID = stk_callback["MerchantRequestID"]
         CheckoutRequestID = stk_callback["CheckoutRequestID"]
