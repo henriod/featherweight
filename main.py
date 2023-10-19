@@ -133,35 +133,39 @@ async def c2b_mpesa_confirmation_resource(
         CheckoutRequestID = stk_callback["CheckoutRequestID"]
         ResultCode = stk_callback["ResultCode"]
         ResultDesc = stk_callback["ResultDesc"]
-        CallbackMetadata = stk_callback["CallbackMetadata"]["Item"]
+        if ResultCode == 0:
+            CallbackMetadata = stk_callback["CallbackMetadata"]["Item"]
 
-        Amount = next(item["Value"] for item in CallbackMetadata if item["Name"] == "Amount")
-        MpesaReceiptNumber = next(item["Value"] for item in CallbackMetadata if item["Name"] == "MpesaReceiptNumber")
-        TransactionDate = next(item["Value"] for item in CallbackMetadata if item["Name"] == "TransactionDate")
-        PhoneNumber = next(item["Value"] for item in CallbackMetadata if item["Name"] == "PhoneNumber")
+            Amount = next(item["Value"] for item in CallbackMetadata if item["Name"] == "Amount")
+            MpesaReceiptNumber = next(item["Value"] for item in CallbackMetadata if item["Name"] == "MpesaReceiptNumber")
+            TransactionDate = next(item["Value"] for item in CallbackMetadata if item["Name"] == "TransactionDate")
+            PhoneNumber = next(item["Value"] for item in CallbackMetadata if item["Name"] == "PhoneNumber")
 
-        transc = {
-            "MerchantRequestID": MerchantRequestID,
-            "CheckoutRequestID": CheckoutRequestID,
-            "ResultCode": ResultCode,
-            "ResultDesc": ResultDesc,
-            "Amount": Amount,
-            "MpesaReceiptNumber": MpesaReceiptNumber,
-            "TransactionDate": TransactionDate,
-            "PhoneNumber": PhoneNumber
-        }
-        redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
-        red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-        await red.set(f'receipt:{transc["CheckoutRequestID"]}', transc)
+            transc = {
+                "MerchantRequestID": MerchantRequestID,
+                "CheckoutRequestID": CheckoutRequestID,
+                "ResultCode": ResultCode,
+                "ResultDesc": ResultDesc,
+                "Amount": Amount,
+                "MpesaReceiptNumber": MpesaReceiptNumber,
+                "TransactionDate": TransactionDate,
+                "PhoneNumber": PhoneNumber
+            }
+            redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
+            red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+            await red.set(f'receipt:{transc["CheckoutRequestID"]}', transc)
 
-        payment_confirmation = PaymentConfirmation(
-            receipt_id = transc["MpesaReceiptNumber"],
-            success = True if transc["ResultCode"] == 0 else False,
-            errors = transc["ResultDesc"]
-        )
+            payment_confirmation = PaymentConfirmation(
+                receipt_id = transc["MpesaReceiptNumber"],
+                success = True if transc["ResultCode"] == 0 else False,
+                errors = transc["ResultDesc"]
+            )
 
 
-        return payment_confirmation
+            return payment_confirmation
+        else:
+            logger.warning(ResultDesc)
+            raise HTTPException(status_code=400, detail=ResultDesc)
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Missing required field: {e}")
 
