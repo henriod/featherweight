@@ -126,54 +126,47 @@ async def c2b_mpesa_confirmation_resource(
     response: Response, 
     c2b_mpesa_request: Any = Body(None)
     ):
+    try:
+        stk_callback = data["Body"]["stkCallback"]
+        
+        MerchantRequestID = stk_callback["MerchantRequestID"]
+        CheckoutRequestID = stk_callback["CheckoutRequestID"]
+        ResultCode = stk_callback["ResultCode"]
+        ResultDesc = stk_callback["ResultDesc"]
+        CallbackMetadata = stk_callback["CallbackMetadata"]["Item"]
 
-    # log time
-    # start = time.perf_counter()
+        Amount = next(item["Value"] for item in CallbackMetadata if item["Name"] == "Amount")
+        MpesaReceiptNumber = next(item["Value"] for item in CallbackMetadata if item["Name"] == "MpesaReceiptNumber")
+        TransactionDate = next(item["Value"] for item in CallbackMetadata if item["Name"] == "TransactionDate")
+        PhoneNumber = next(item["Value"] for item in CallbackMetadata if item["Name"] == "PhoneNumber")
 
-    # # check transaction time:
-    # # default date time:
-    # transaction_date_time = (datetime.today()).strftime('%Y-%m-%d %H:%M')
-    # transaction_date = (datetime.today()).strftime('%Y-%m-%d')
+        transc = {
+            "MerchantRequestID": MerchantRequestID,
+            "CheckoutRequestID": CheckoutRequestID,
+            "ResultCode": ResultCode,
+            "ResultDesc": ResultDesc,
+            "Amount": Amount,
+            "MpesaReceiptNumber": MpesaReceiptNumber,
+            "TransactionDate": TransactionDate,
+            "PhoneNumber": PhoneNumber
+        }
+        redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
+        red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+        await red.set(f'receipt:{transc["CheckoutRequestID"]}', transc)
 
-    # try:
-    #     mpesa_request_time = datetime.strptime(c2b_mpesa_request.TransTime, "%Y%m%d%H%M%S").date()
-    #     transaction_date_time = mpesa_request_time.strftime('%Y-%m-%d %H:%M')
-    #     transaction_date = mpesa_request_time.strftime('%Y-%m-%d')
+        payment_confirmation = PaymentConfirmation(
+            receipt_id = transc["MpesaReceiptNumber"],
+            success = True if transc["ResultCode"] == 0 else False,
+            errors = transc["ResultDesc"]
+        )
 
-    # except ValueError as e:
-    #     error_on_date_conversion = f"M-Pesa Date conversion error: Date:{c2b_mpesa_request.TransTime} does not conform to %d %b %Y"
 
-    payment_confirmation = PaymentConfirmation()
-    logger.warning("=------------",c2b_mpesa_request)
+        return payment_confirmation
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Missing required field: {e}")
 
-    # # check if request invoice number is numeric:
-    # if c2b_mpesa_request.BillRefNumber.isnumeric():
-    #     # do validation here:
-    #     # then:
-    #     receipt = create_receipt(c2b_mpesa_request, transaction_date)
-    # Save data in Redis
-    redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
-    red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-    await red.set(f'receipt:{random.randint(3, 9)}', json.dumps(c2b_mpesa_request, indent = 4))
-
-    # else:
-
-    #     # value supplied was not an integer, do alphanumeric validation here:
-
-    #     # add receipting creation code:
-    #     # create the receipt object:
-    #     receipt = create_receipt(c2b_mpesa_request, transaction_date)
-    #     # Save data in Redis
-    #     redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
-    #     red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-    #     await red.set(f'receipt:{c2b_mpesa_request.TransID}', c2b_mpesa_request)
-
-    # # performance monitoring
-    # request_time = time.perf_counter() - start
-
-    # print(request_time)
-
-    return payment_confirmation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 def dev():
     try:
