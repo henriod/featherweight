@@ -48,9 +48,9 @@ class C2BMpesaRequest(BaseModel):
 
 
 class PaymentConfirmation(BaseModel):
-    receipt_id: Optional[int]
+    receipt_id: Optional[str]
     success: bool = False
-    errors: Optional[List[str]]
+    errors: Optional[[str]
 
 
 class PaymentConfirmationResponse(BaseModel):
