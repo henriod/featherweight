@@ -122,8 +122,7 @@ async def time_request(request, call_next):
 async def c2b_mpesa_confirmation_resource(
     background_tasks: BackgroundTasks, 
     response: Response, 
-    c2b_mpesa_request: C2BMpesaRequest,
-    user_agent: Union[str, None] = Header(default=None, include_in_schema=False)
+    c2b_mpesa_request: C2BMpesaRequest
     ):
 
     # log time
