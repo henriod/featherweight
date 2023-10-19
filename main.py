@@ -4,6 +4,7 @@ import subprocess
 from datetime import datetime
 import time
 import random
+import json
 
 import redis.asyncio as redis
 import uvicorn
@@ -153,7 +154,7 @@ async def c2b_mpesa_confirmation_resource(
     # Save data in Redis
     redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
     red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-    await red.set(f'receipt:{random.randint(3, 9)}', c2b_mpesa_request)
+    await red.set(f'receipt:{random.randint(3, 9)}', json.dumps(c2b_mpesa_request, indent = 4))
 
     # else:
 
