@@ -126,6 +126,7 @@ async def c2b_mpesa_confirmation_resource(
     response: Response, 
     c2b_mpesa_request: Any = Body(None)
     ):
+    redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
     try:
         stk_callback = c2b_mpesa_request["Body"]["stkCallback"]
         
@@ -151,7 +152,7 @@ async def c2b_mpesa_confirmation_resource(
                 "TransactionDate": TransactionDate,
                 "PhoneNumber": PhoneNumber
             }
-            redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
+
             red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
             await red.set(f'receipt:{CheckoutRequestID}', json.dumps(transc))
 
@@ -164,6 +165,16 @@ async def c2b_mpesa_confirmation_resource(
 
             return payment_confirmation
         else:
+            transc = {
+                "MerchantRequestID": MerchantRequestID,
+                "CheckoutRequestID": CheckoutRequestID,
+                "ResultCode": ResultCode,
+                "ResultDesc": ResultDesc
+            }
+
+            red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+            await red.set(f'receipt:{CheckoutRequestID}', json.dumps(transc))
+            
             logger.warning(ResultDesc)
             raise HTTPException(status_code=400, detail=ResultDesc)
     except KeyError as e:
