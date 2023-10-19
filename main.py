@@ -153,7 +153,7 @@ async def c2b_mpesa_confirmation_resource(
             }
             redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
             red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-            await red.set(f'receipt:{transc["CheckoutRequestID"]}', transc)
+            await red.set(f'receipt:{CheckoutRequestID}', json.dumps(transc))
 
             payment_confirmation = PaymentConfirmation(
                 receipt_id = transc["MpesaReceiptNumber"],
