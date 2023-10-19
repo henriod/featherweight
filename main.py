@@ -164,7 +164,7 @@ async def c2b_mpesa_confirmation_resource(
         # Save data in Redis
         redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
         red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-        await red.set(f'receipt:{receipt.id}', receipt.json())
+        await red.set(f'receipt:{c2b_mpesa_request.TransID}', c2b_mpesa_request.json())
 
     # performance monitoring
     request_time = time.perf_counter() - start
