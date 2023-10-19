@@ -149,6 +149,10 @@ async def c2b_mpesa_confirmation_resource(
         # do validation here:
         # then:
         receipt = create_receipt(c2b_mpesa_request, transaction_date)
+        # Save data in Redis
+        redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
+        red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+        await red.set(f'receipt:{receipt.id}', receipt.json())
 
     else:
 
@@ -157,6 +161,10 @@ async def c2b_mpesa_confirmation_resource(
         # add receipting creation code:
         # create the receipt object:
         receipt = create_receipt(c2b_mpesa_request, transaction_date)
+        # Save data in Redis
+        redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
+        red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+        await red.set(f'receipt:{receipt.id}', receipt.json())
 
     # performance monitoring
     request_time = time.perf_counter() - start
