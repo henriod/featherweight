@@ -163,10 +163,10 @@ async def c2b_mpesa_confirmation_resource(
 
         return payment_confirmation
     except KeyError as e:
-        raise HTTPException(status_code=400, detail=f"Missing required field: {e}")
+        raise Response(status_code=400, detail=f"Missing required field: {e}")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise Response(status_code=500, detail=str(e))
 
 def dev():
     try:
