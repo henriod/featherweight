@@ -14,7 +14,7 @@ from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
 from pydantic import BaseModel
 
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Any
 
 from config import settings
 
@@ -122,53 +122,54 @@ async def time_request(request, call_next):
 async def c2b_mpesa_confirmation_resource(
     background_tasks: BackgroundTasks, 
     response: Response, 
-    c2b_mpesa_request: C2BMpesaRequest
+    c2b_mpesa_request: Any = Body(None)
     ):
 
     # log time
-    start = time.perf_counter()
+    # start = time.perf_counter()
 
-    # check transaction time:
-    # default date time:
-    transaction_date_time = (datetime.today()).strftime('%Y-%m-%d %H:%M')
-    transaction_date = (datetime.today()).strftime('%Y-%m-%d')
+    # # check transaction time:
+    # # default date time:
+    # transaction_date_time = (datetime.today()).strftime('%Y-%m-%d %H:%M')
+    # transaction_date = (datetime.today()).strftime('%Y-%m-%d')
 
-    try:
-        mpesa_request_time = datetime.strptime(c2b_mpesa_request.TransTime, "%Y%m%d%H%M%S").date()
-        transaction_date_time = mpesa_request_time.strftime('%Y-%m-%d %H:%M')
-        transaction_date = mpesa_request_time.strftime('%Y-%m-%d')
+    # try:
+    #     mpesa_request_time = datetime.strptime(c2b_mpesa_request.TransTime, "%Y%m%d%H%M%S").date()
+    #     transaction_date_time = mpesa_request_time.strftime('%Y-%m-%d %H:%M')
+    #     transaction_date = mpesa_request_time.strftime('%Y-%m-%d')
 
-    except ValueError as e:
-        error_on_date_conversion = f"M-Pesa Date conversion error: Date:{c2b_mpesa_request.TransTime} does not conform to %d %b %Y"
+    # except ValueError as e:
+    #     error_on_date_conversion = f"M-Pesa Date conversion error: Date:{c2b_mpesa_request.TransTime} does not conform to %d %b %Y"
 
     payment_confirmation = PaymentConfirmation()
+    logger.warning("=------------",c2b_mpesa_request)
 
-    # check if request invoice number is numeric:
-    if c2b_mpesa_request.BillRefNumber.isnumeric():
-        # do validation here:
-        # then:
-        receipt = create_receipt(c2b_mpesa_request, transaction_date)
-        # Save data in Redis
-        redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
-        red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-        await red.set(f'receipt:{receipt.id}', receipt.json())
+    # # check if request invoice number is numeric:
+    # if c2b_mpesa_request.BillRefNumber.isnumeric():
+    #     # do validation here:
+    #     # then:
+    #     receipt = create_receipt(c2b_mpesa_request, transaction_date)
+    #     # Save data in Redis
+    #     redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
+    #     red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+    #     await red.set(f'receipt:{receipt.id}', receipt.json())
 
-    else:
+    # else:
 
-        # value supplied was not an integer, do alphanumeric validation here:
+    #     # value supplied was not an integer, do alphanumeric validation here:
 
-        # add receipting creation code:
-        # create the receipt object:
-        receipt = create_receipt(c2b_mpesa_request, transaction_date)
-        # Save data in Redis
-        redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
-        red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-        await red.set(f'receipt:{c2b_mpesa_request.TransID}', c2b_mpesa_request.json())
+    #     # add receipting creation code:
+    #     # create the receipt object:
+    #     receipt = create_receipt(c2b_mpesa_request, transaction_date)
+    #     # Save data in Redis
+    #     redis_url = f"redis://{settings.REDISUSER}:{settings.REDISPASSWORD}@{settings.REDISHOST}:{settings.REDISPORT}"
+    #     red = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+    #     await red.set(f'receipt:{c2b_mpesa_request.TransID}', c2b_mpesa_request.json())
 
-    # performance monitoring
-    request_time = time.perf_counter() - start
+    # # performance monitoring
+    # request_time = time.perf_counter() - start
 
-    print(request_time)
+    # print(request_time)
 
     return payment_confirmation
 
