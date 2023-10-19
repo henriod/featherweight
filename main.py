@@ -6,7 +6,7 @@ import time
 
 import redis.asyncio as redis
 import uvicorn
-from fastapi import Depends, FastAPI, Header, Response, status, BackgroundTasks
+from fastapi import Depends, FastAPI, Header, Response, status, BackgroundTasks, Body
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
