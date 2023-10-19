@@ -167,6 +167,7 @@ async def c2b_mpesa_confirmation_resource(
             logger.warning(ResultDesc)
             raise HTTPException(status_code=400, detail=ResultDesc)
     except KeyError as e:
+        logger.warning("error:",str(e))
         raise HTTPException(status_code=400, detail=f"Missing required field: {e}")
 
 def dev():
