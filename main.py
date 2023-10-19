@@ -8,7 +8,7 @@ import json
 
 import redis.asyncio as redis
 import uvicorn
-from fastapi import Depends, FastAPI, Header, Response, status, BackgroundTasks, Body
+from fastapi import Depends, FastAPI, Header, Response, status, BackgroundTasks, Body, HTTPException
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
@@ -163,10 +163,10 @@ async def c2b_mpesa_confirmation_resource(
 
         return payment_confirmation
     except KeyError as e:
-        raise Response(status_code=400, detail=f"Missing required field: {e}")
+        raise HTTPException(status_code=400, detail=f"Missing required field: {e}")
 
     except Exception as e:
-        raise Response(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 def dev():
     try:
